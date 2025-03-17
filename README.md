@@ -84,7 +84,8 @@ Możliwości dalszej poprawy: wykorzystanie sprzętowego kodowania obrazu zamias
 - Dodanie elementu mechanicznego obracającego pokrętłem przysłony obiektywu.
 - Zakup lepszego obiektywu.
 
-
+# ENG
+# Welding AR System Using Raspberry Pi Zero 2 W
 
 ## Project Overview
 This project involves creating an Augmented Reality (AR) system using a Raspberry Pi Zero 2 W, a camera, and a 5.5-inch display (1920x1080). The system captures real-time video from the camera and splits it into two equal halves, enabling the display to function as AR goggles.
