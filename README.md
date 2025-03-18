@@ -2,7 +2,6 @@
 
 # Maska do spawania AR / Welding AR System Using Raspberry Pi Zero 2 W / [PL/ENG]
 
-# Temat projektu i opis założeń
 
 ## Temat Projektu
 Projekt dotyczy stworzenia systemu AR wykorzystującego Raspberry Pi Zero 2 W, kamerę oraz wyświetlacz 5,5 cala (1920x1080). System wyświetla na żywo obraz z kamery podzielony na dwie równe połowy, co umożliwia używanie wyświetlacza jako gogli AR.
@@ -84,7 +83,12 @@ Możliwości dalszej poprawy: wykorzystanie sprzętowego kodowania obrazu zamias
 - Dodanie elementu mechanicznego obracającego pokrętłem przysłony obiektywu.
 - Zakup lepszego obiektywu.
 
+![schemat_blokowy](https://github.com/user-attachments/assets/596fdb22-4aad-4948-9483-1b2a79ff850a)
+
+![schemat](https://github.com/user-attachments/assets/9bff36c3-9561-4d6e-b886-7f356c689b2f)
+
 # ENG
+
 # Welding AR System Using Raspberry Pi Zero 2 W
 
 ## Project Overview
