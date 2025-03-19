@@ -85,7 +85,13 @@ Możliwości dalszej poprawy: wykorzystanie sprzętowego kodowania obrazu zamias
 
 ![schemat_blokowy](https://github.com/user-attachments/assets/596fdb22-4aad-4948-9483-1b2a79ff850a)
 
-![schemat](https://github.com/user-attachments/assets/9bff36c3-9561-4d6e-b886-7f356c689b2f)
+![schema](https://github.com/user-attachments/assets/df591576-924b-4fb6-b2c4-a62a69f624a2)
+
+![frontENG](https://github.com/user-attachments/assets/d9cabbe8-28d2-48ae-8142-f79a362ba1cb)
+
+![topENG](https://github.com/user-attachments/assets/54dfbcf4-2357-4185-9818-b52c578b4063)
+
+![insideENG](https://github.com/user-attachments/assets/297ee58b-2856-4a2e-a16c-637f7b8ffd8b)
 
 # ENG
 
@@ -169,4 +175,6 @@ This project involves creating an Augmented Reality (AR) system using a Raspberr
 - Enable video recording or live streaming.
 - Add mechanical control for camera aperture.
 - Upgrade to a higher-quality camera lens.
+
+  
 
