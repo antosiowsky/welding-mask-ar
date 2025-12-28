@@ -13,6 +13,7 @@ import time
 from threading import Thread, Lock
 import spidev
 import sys
+from datetime import datetime
 
 # ============================================================================
 # CONFIGURATION
@@ -42,12 +43,12 @@ DEBUG_MODE = True   # Set to True to print FPS and sensor values to console and 
 # Camera exposure/brightness adjustment based on light
 LIGHT_ADJUST_ENABLED = True
 LIGHT_ADJUST_INTERVAL = 0.15    # Adjust every 0.15s (very fast adaptive response)
-LIGHT_THRESHOLD_DIM = 200       # Below this: increase exposure
-LIGHT_THRESHOLD_BRIGHT = 700    # Above this: decrease exposure
+LIGHT_THRESHOLD_DIM = 150       # Below this: increase exposure
+LIGHT_THRESHOLD_BRIGHT = 850    # Above this: decrease exposure
 
 # Adaptive gain controller (PID-like smooth adjustment instead of threshold jumps)
 ADAPTIVE_GAIN_ENABLED = True
-GAIN_TARGET_LIGHT = 450          # Target light level for neutral gain
+GAIN_TARGET_LIGHT = 550          # Target light level for neutral gain (natural light)
 GAIN_MIN = 1.0                   # Minimum gain
 GAIN_MAX = 16.0                  # Maximum gain
 GAIN_RATE = 0.15                # Smooth adjustment rate (0.0-1.0, lower = smoother)
@@ -59,6 +60,13 @@ TARGET_FPS = 18                 # Target frame rate (reduced for sensor reads + 
 FRAMEBUFFER_CACHE = None        # Cache framebuffer file handle
 FRAME_TIME_BUDGET = 1.0 / TARGET_FPS  # Time budget per frame (seconds)
 MIN_FRAME_TIME = 0.003  # Minimum sleep to avoid CPU spin
+
+# Recording settings
+RECORDING_TRIGGER_THRESHOLD = 50    # Light level below this triggers recording start/stop
+RECORDING_TRIGGER_DURATION = 3.0    # Seconds to hold photoresistor covered
+RECORDING_OUTPUT_DIR = "/home/maska/recordings"  # Directory for saved recordings
+RECORDING_FPS = 18                  # Recording FPS (match target FPS)
+RECORDING_CODEC = "mp4v"            # MP4 codec (MJPEG: 'MJPG', H264: 'avc1', MPEG4: 'mp4v')
 
 # ============================================================================
 # SENSOR CALIBRATION (from sensor_test.py)
@@ -235,12 +243,33 @@ background_template = np.zeros((FB_HEIGHT, FB_WIDTH, 3), dtype=np.uint8)
 # Pre-allocate RGB565 buffer (reused for framebuffer writes)
 rgb565_buffer = np.zeros((FB_HEIGHT, FB_WIDTH), dtype=np.uint16)
 
+def render_recording_icon(image, recording_active):
+    """
+    Render recording icon (red circle) on HUD.
+    
+    Args:
+        image (ndarray): Image to render icon on
+        recording_active (bool): Whether recording is active
+    """
+    if not recording_active:
+        return
+    
+    # Red circle in top-right corner with REC text
+    icon_x = FB_WIDTH - 120
+    icon_y = 50
+    
+    # Pulsing effect (blink every 0.5 seconds)
+    if int(time.time() * 2) % 2 == 0:
+        cv2.circle(image, (icon_x, icon_y), 20, (0, 0, 255), -1)  # Filled red circle
+        cv2.putText(image, "REC", (icon_x + 30, icon_y + 10), 
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2, cv2.LINE_AA)
+
 def render_osd(image, battery_voltage, battery_status, battery_critical,
                mq07_voltage, mq07_status, mq07_dangerous,
-               light_value, light_status):
+               light_value, light_status, recording_active=False):
     """
     Render on-screen display (OSD) with clean layout.
-    Shows battery, air quality, light level. Red border if danger.
+    Shows battery, air quality, light level, recording icon. Red border if danger.
     
     Args:
         image (ndarray): Image to render text on
@@ -252,6 +281,7 @@ def render_osd(image, battery_voltage, battery_status, battery_critical,
         mq07_dangerous (bool): Air quality danger flag
         light_value (int): Light ADC value
         light_status (str): Light status text
+        recording_active (bool): Whether recording is active
     """
     font = cv2.FONT_HERSHEY_SIMPLEX
     font_scale = 0.9  # Larger font for better visibility
@@ -269,13 +299,16 @@ def render_osd(image, battery_voltage, battery_status, battery_critical,
     
     # Light level info hidden (commented out)
     
+    # Recording icon
+    render_recording_icon(image, recording_active)
+    
     # RED BORDER if danger
     if mq07_dangerous:
         cv2.rectangle(image, (5, 5), (FB_WIDTH - 5, FB_HEIGHT - 5), (0, 0, 255), 8)
 
 def display_on_framebuffer(double_frame, battery_voltage, battery_status, battery_critical,
                             mq07_voltage, mq07_status, mq07_dangerous,
-                            light_value, light_status, fb_handle=None):
+                            light_value, light_status, fb_handle=None, recording_active=False):
     """
     Render dual-view frame with OSD to framebuffer.
     Optimized: reuses buffers, minimal copies, cached file handle, fast resize.
@@ -286,6 +319,10 @@ def display_on_framebuffer(double_frame, battery_voltage, battery_status, batter
         mq07_voltage, mq07_status, mq07_dangerous: Air quality info
         light_value, light_status: Light level info
         fb_handle: Cached framebuffer file handle (optional)
+        recording_active (bool): Whether recording is active
+    
+    Returns:
+        ndarray: The final rendered frame with OSD (for recording)
     """
     global rgb565_buffer
     
@@ -300,7 +337,7 @@ def display_on_framebuffer(double_frame, battery_voltage, battery_status, batter
     try:
         render_osd(background, battery_voltage, battery_status, battery_critical,
                    mq07_voltage, mq07_status, mq07_dangerous,
-                   light_value, light_status)
+                   light_value, light_status, recording_active)
     except Exception:
         # fallback: minimal text if render_osd fails
         try:
@@ -329,6 +366,9 @@ def display_on_framebuffer(double_frame, battery_voltage, battery_status, batter
     except Exception as e:
         if DEBUG_MODE:
             print('DEBUG: Framebuffer write error:', e)
+    
+    # Return the final frame for recording
+    return background
 
 # ============================================================================
 # CAMERA CONTROL
@@ -373,12 +413,12 @@ def adjust_camera_exposure(picam2, light_value):
         new_gain = max(GAIN_MIN, min(GAIN_MAX, new_gain))
         
         # Adaptive exposure time (reduce latency by lowering exposure in bright, keeping it higher in dark)
-        if light_value > 600:  # Bright: minimal exposure for low latency
+        if light_value > 750:  # Very bright: minimal exposure for low latency
             target_exposure = EXPOSURE_TIME_MIN + 1000  # ~2-3ms
-        elif light_value > 400:  # Normal: medium exposure
-            target_exposure = 8000  # ~8ms
-        elif light_value > 200:  # Dim: longer exposure
-            target_exposure = 12000  # ~12ms
+        elif light_value > 550:  # Bright/Normal: medium exposure
+            target_exposure = 7000  # ~7ms
+        elif light_value > 300:  # Dim: longer exposure
+            target_exposure = 11000  # ~11ms
         else:  # Very dark: maximum exposure
             target_exposure = EXPOSURE_TIME_MAX  # ~20ms
         
@@ -393,8 +433,8 @@ def adjust_camera_exposure(picam2, light_value):
             controls = {
                 "AnalogueGain": new_gain,
                 "ExposureTime": new_exposure,
-                "Brightness": -0.05 if light_value > 700 else (0.05 if light_value < 200 else 0.0),
-                "Contrast": 1.0 if light_value > 700 else (1.4 if light_value < 200 else 1.2)
+                "Brightness": 0.0 if light_value > 550 else (0.05 if light_value < 250 else 0.0),
+                "Contrast": 1.1 if light_value > 550 else (1.3 if light_value < 250 else 1.2)
             }
             
             picam2.set_controls(controls)
@@ -425,7 +465,21 @@ def main():
     print("SPI initialized")
     
     # Initialize camera - optimized for low latency spawanie
-    picam2 = Picamera2()
+    # Retry logic for camera initialization (in case libcamera is still starting)
+    picam2 = None
+    for attempt in range(5):
+        try:
+            picam2 = Picamera2()
+            print("Camera initialized successfully")
+            break
+        except RuntimeError as e:
+            if attempt < 4:
+                print(f"Camera init failed (attempt {attempt + 1}/5): {e}")
+                time.sleep(2)
+            else:
+                print(f"Camera init failed after 5 attempts: {e}")
+                raise
+    
     camera_config = {
         "Sharpness": 1.0,
         "Contrast": 1.2,
@@ -446,6 +500,18 @@ def main():
     # Start frame capture thread
     frame_processor = FrameProcessor(picam2)
     print("Frame processor started")
+    
+    # Create recording directory if it doesn't exist
+    os.makedirs(RECORDING_OUTPUT_DIR, exist_ok=True)
+    
+    # Recording state
+    recording_active = False
+    video_writer = None
+    recording_filename = None
+    
+    # Photoresistor trigger state for recording
+    light_low_start_time = None  # Time when photoresistor was first covered
+    trigger_armed = True  # Prevents retriggering immediately after toggle
     
     # FPS tracking
     fps_counter = 0
@@ -491,6 +557,42 @@ def main():
                     battery_v, battery_st, battery_crit = calculate_battery_voltage(battery_adc)
                     mq07_v, mq07_st, mq07_danger = calculate_mq07_status(mq07_adc)
                     light_val, light_st = calculate_light_level(light_adc)
+                    
+                    # Recording trigger detection (photoresistor covered for 5 seconds)
+                    if light_val < RECORDING_TRIGGER_THRESHOLD:
+                        # Photoresistor is covered
+                        if light_low_start_time is None and trigger_armed:
+                            light_low_start_time = time.time()
+                        elif light_low_start_time is not None:
+                            # Check if held for 5 seconds
+                            if time.time() - light_low_start_time >= RECORDING_TRIGGER_DURATION:
+                                # Toggle recording
+                                if not recording_active:
+                                    # Start recording
+                                    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                                    recording_filename = os.path.join(RECORDING_OUTPUT_DIR, f"welding_{timestamp}.mp4")
+                                    fourcc = cv2.VideoWriter_fourcc(*RECORDING_CODEC)
+                                    video_writer = cv2.VideoWriter(recording_filename, fourcc, RECORDING_FPS, 
+                                                                   (FB_WIDTH, FB_HEIGHT))
+                                    recording_active = True
+                                    print(f"Recording started: {recording_filename}")
+                                else:
+                                    # Stop recording
+                                    if video_writer is not None:
+                                        video_writer.release()
+                                        video_writer = None
+                                    recording_active = False
+                                    print(f"Recording stopped: {recording_filename}")
+                                    recording_filename = None
+                                
+                                # Reset trigger (require uncovering and re-covering)
+                                light_low_start_time = None
+                                trigger_armed = False
+                    else:
+                        # Photoresistor is uncovered - reset trigger
+                        light_low_start_time = None
+                        trigger_armed = True
+                        
                 except Exception as e:
                     if DEBUG_MODE:
                         print(f"Sensor read error: {e}")
@@ -505,9 +607,17 @@ def main():
 
             # Display on framebuffer with OSD (use cached handle)
             try:
-                display_on_framebuffer(double_frame, battery_v, battery_st, battery_crit,
-                                       mq07_v, mq07_st, mq07_danger,
-                                       light_val, light_st, fb_handle)
+                final_frame = display_on_framebuffer(double_frame, battery_v, battery_st, battery_crit,
+                                                      mq07_v, mq07_st, mq07_danger,
+                                                      light_val, light_st, fb_handle, recording_active)
+                
+                # Write frame to video if recording
+                if recording_active and video_writer is not None:
+                    try:
+                        video_writer.write(final_frame)
+                    except Exception as e:
+                        if DEBUG_MODE:
+                            print(f"Video write error: {e}")
             except Exception as e:
                 if DEBUG_MODE:
                     print(f"Display error: {e}")
@@ -541,6 +651,12 @@ def main():
     finally:
         # Cleanup
         print("Cleaning up...")
+        
+        # Stop recording if active
+        if video_writer is not None:
+            video_writer.release()
+            print("Recording stopped and saved.")
+        
         frame_processor.stop()
         picam2.stop()
         spi.close()
