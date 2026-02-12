@@ -2,7 +2,7 @@
 """
 AR Welding Mask - Main Program
 Real-time camera feed with sensor overlay for AR goggles display
-Displays dual-view (VR mode) with battery, air quality (MQ-07), and light level info
+Displays dual-view (VR mode) with battery and air quality (MQ-07)
 """
 
 import numpy as np
