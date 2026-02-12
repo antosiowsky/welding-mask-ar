@@ -30,7 +30,7 @@ The device features a custom-made PCB, a hybrid power supply with **Energy Harve
 * **Power:** Li-Ion 18650 Cells + BMS
 
 ### Custom PCB
-The motherboard was designed in **KiCad / Fusion 360** and manufactured using a custom **laser ablation method** combined with chemical etching.
+The motherboard was designed in **Autodesk Fusion 360** and manufactured using a custom **laser ablation method** combined with chemical etching.
 
 ![Custom PCB Process](media/images/pcb.png)
 
@@ -83,16 +83,18 @@ The physical construction integrates standard welding protection with custom dig
 ### 2. AR HUD Interface (Scenarios)
 Visualization of the real-time data overlaid on the welder's field of view.
 
-| **Welding Arc (Active AGC)** | **Gas Alarm (Safety Warning)** |
-| :---: | :---: |
-| ![Welding Arc](media/images/hud_start.jpg) | ![Gas Alarm](media/images/hud_alarm.jpg) |
+| **Arc Ignition (Initial Flash)** | **Stabilized View (Active AGC)** | **Gas Alarm (Safety Warning)** |
+| :---: | :---: | :---: |
+| ![Flash](media/images/hud_start.png) | ![Welding](media/images/hud_welding.png) | ![Alarm](media/images/hud_alarm.png) |
 
 ### 3. Video Demonstration
-Click the thumbnail below to watch the system in action on YouTube:
+System operation in real-time. The GIF below demonstrates the Adaptive Gain Control (AGC) reacting to the welding arc.
 
-[![Watch the video](https://img.youtube.com/vi/YOUR_VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=YOUR_VIDEO_ID_HERE)
+<div align="center">
+  <img src="media/images/welding.gif" alt="Welding Demo GIF" width="100%">
+</div>
 
-> **Note:** If the YouTube link is unavailable, you can find the raw video file in the repository at: `media/video/demo.mp4`.
+> **Note:** The high-quality raw video file is available in the repository at: `media/video/demo.mp4`
 
 ---
 
@@ -100,7 +102,7 @@ Click the thumbnail below to watch the system in action on YouTube:
 
 The entire mechanical structure, including electronics enclosures and custom mounts, was designed in **Autodesk Fusion 360**. All components were optimized for 3D printing using **PET-G** and **PLA** filaments.
 
-![CAD Model](media/images/cad_model.png)
+![CAD Model](media/images/cad.png)
 
 ---
 
