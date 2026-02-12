@@ -29,6 +29,10 @@ The device features a custom-made PCB, a hybrid power supply with **Energy Harve
 * **Energy Harvesting:** Polycrystalline Solar Panel
 * **Power:** Li-Ion 18650 Cells + BMS
 
+### Wiring Diagram
+The electrical connection between the Raspberry Pi and the analog sensors via the MCP3008 ADC.
+![Schematic](media/images/schema.png)
+
 ### Custom PCB
 The motherboard was designed in **Autodesk Fusion 360** and manufactured using a custom **laser ablation method** combined with chemical etching.
 
@@ -97,6 +101,16 @@ System operation in real-time. The GIF below demonstrates the Adaptive Gain Cont
 > **Note:** The high-quality raw video file is available in the repository at: `media/video/demo.mp4`
 
 ---
+
+## 📊 System Performance
+Key metrics measured during validation tests:
+
+| Metric | Result | Notes |
+| :--- | :--- | :--- |
+| **Glass-to-Glass Latency** | **60 - 90 ms** | Dependent on exposure time. Acceptable for MIG/MAG welding. |
+| **Frame Rate** | **18 - 20 FPS** | Stable limit of RPi Zero 2W with dual-view rendering. |
+| **Solar Charging** | **~150 mA** | Measured under welding arc simulation. Acts as a Range Extender. |
+| **Gas Response Time** | **< 2.0 s** | Tested with butane/propane mixture. |
 
 ## 🏗️ Mechanical Design
 
