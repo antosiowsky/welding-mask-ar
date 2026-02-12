@@ -32,7 +32,7 @@ The device features a custom-made PCB, a hybrid power supply with **Energy Harve
 ### Custom PCB
 The motherboard was designed in **KiCad / Fusion 360** and manufactured using a custom **laser ablation method** combined with chemical etching.
 
-![Custom PCB Process](media/images/pcb_final.jpg)
+![Custom PCB Process](media/images/pcb.png)
 
 ---
 
@@ -60,7 +60,7 @@ The physical construction integrates standard welding protection with custom dig
 
 | **Front View (External Sensors)** | **Internal Electronics & Optics** |
 | :---: | :---: |
-| ![Front View](media/images/mask_front.jpg) | ![Internal Electronics](media/images/mask_back.jpg) |
+| ![Front View](media/images/mask_front.png) | ![Internal Electronics](media/images/mask_back.png) |
 
 #### **Component Legend:**
 
@@ -85,7 +85,7 @@ Visualization of the real-time data overlaid on the welder's field of view.
 
 | **Welding Arc (Active AGC)** | **Gas Alarm (Safety Warning)** |
 | :---: | :---: |
-| ![Welding Arc](media/images/hud_welding.jpg) | ![Gas Alarm](media/images/hud_alarm.jpg) |
+| ![Welding Arc](media/images/hud_start.jpg) | ![Gas Alarm](media/images/hud_alarm.jpg) |
 
 ### 3. Video Demonstration
 Click the thumbnail below to watch the system in action on YouTube:
