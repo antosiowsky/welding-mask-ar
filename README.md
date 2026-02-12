@@ -51,7 +51,7 @@ opencv-python-headless
 picamera2
 spidev
 numpy
-
+```
 # 🛡️ Smart Welding Helmet with AR HUD
 
 Projekt inteligentnej przyłbicy spawalniczej wyposażonej w wyświetlacz przezierny (HUD) oraz zaawansowane systemy monitorowania bezpieczeństwa.
